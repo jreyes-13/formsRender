@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+import dj_database_url
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +23,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-x27yo$y_@bc)v20m&+c5_-=bl)cew)tcii14i!t!$r6c$r##16'
+# SECRET_KEY = 'django-insecure-x27yo$y_@bc)v20m&+c5_-=bl)cew)tcii14i!t!$r6c$r##16'
+SECRET_KEY = os.environ.get('SECRET_KEY', default='unsecure-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = 'RENDER' not in os.environ
+
 
 ALLOWED_HOSTS = []
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition
@@ -42,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -73,14 +83,19 @@ WSGI_APPLICATION = 'forms.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'test',
+#         'USER': 'postgres',
+#         'PASSWORD': '1lovePosgresql',
+#         'HOST': 'localhost'
+#     }
+# }
+
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'test',
-        'USER': 'postgres',
-        'PASSWORD': '1lovePosgresql',
-        'HOST': 'localhost'
-    }
+      'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
 }
 
 
@@ -119,3 +134,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+#  user folder mapping
+STATICFILES_DIRS = [
+	BASE_DIR / STATIC_URL,
+]
+if not DEBUG:
+    # django internal mapping 
+    STATIC_ROOT = BASE_DIR / "assets"
+    STATICFILE_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
